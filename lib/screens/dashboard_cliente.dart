@@ -46,15 +46,18 @@ class _DashboardClienteState extends State<DashboardCliente> {
     int cantidadSeleccionada = cantidades[index] ?? 1;
 
     setState(() {
-      int indiceEnCarrito = carrito.indexWhere((item) => item.producto['id'] == producto['id']);
+      int indiceEnCarrito =
+          carrito.indexWhere((item) => item.producto['id'] == producto['id']);
       if (indiceEnCarrito != -1) {
         carrito[indiceEnCarrito].cantidad += cantidadSeleccionada;
       } else {
         carrito.add(ProductoCarrito(
           producto: {
-            'id': producto['id'] ?? 'unknown', // Valor por defecto si id es nulo
+            'id':
+                producto['id'] ?? 'unknown', // Valor por defecto si id es nulo
             'nombre': producto['nombre'] ?? 'Sin nombre',
-            'precio': producto['precio'].toString(), // Aseguramos que sea string para conversión posterior
+            'precio': producto['precio']
+                .toString(), // Aseguramos que sea string para conversión posterior
             'imagen_url': producto['imagen_url'] ?? '',
           },
           cantidad: cantidadSeleccionada,
@@ -64,7 +67,8 @@ class _DashboardClienteState extends State<DashboardCliente> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${producto['nombre']} x$cantidadSeleccionada agregado al carrito.'),
+        content: Text(
+            '${producto['nombre']} x$cantidadSeleccionada agregado al carrito.'),
         duration: Duration(seconds: 2),
       ),
     );
@@ -88,58 +92,82 @@ class _DashboardClienteState extends State<DashboardCliente> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Carrito de Compras'),
-        content: Container(
-          width: double.maxFinite,
-          child: carrito.isEmpty
-              ? Text('Tu carrito está vacío.')
-              : ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ...carrito.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final item = entry.value;
-                      return ListTile(
-                        leading: Icon(Icons.shopping_bag, color: Colors.blue),
-                        title: Text(item.producto['nombre']),
-                        subtitle: Text('Cantidad: ${item.cantidad} | ID: ${item.producto['id']}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('Bs. ${item.subtotal.toStringAsFixed(2)}'),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                              onPressed: () {
-                                eliminarDelCarrito(index);
-                              },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          double total = carrito.fold(0, (sum, item) => sum + item.subtotal);
+          return AlertDialog(
+            title: Text('Carrito de Compras'),
+            content: Container(
+              width: double.maxFinite,
+              child: carrito.isEmpty
+                  ? Text('Tu carrito está vacío.')
+                  : ListView(
+                      shrinkWrap: true,
+                      children: [
+                        ...carrito.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          return ListTile(
+                            leading:
+                                Icon(Icons.shopping_bag, color: Colors.blue),
+                            title: Text(item.producto['nombre']),
+                            subtitle: Text(
+                                'Cantidad: ${item.cantidad} | ID: ${item.producto['id']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Bs. ${item.subtotal.toStringAsFixed(2)}'),
+                                IconButton(
+                                  icon: Icon(Icons.delete,
+                                      color: Colors.red, size: 20),
+                                  onPressed: () {
+                                    setState(() {
+                                      final nombre =
+                                          carrito[index].producto['nombre'];
+                                      carrito.removeAt(index);
+                                      // Actualiza solo el diálogo
+                                      setStateDialog(() {});
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              '$nombre eliminado del carrito.'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
-                          ],
+                          );
+                        }),
+                        Divider(),
+                        ListTile(
+                          title: Text('Total',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          trailing: Text('Bs. ${total.toStringAsFixed(2)}',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                      );
-                    }),
-                    Divider(),
-                    ListTile(
-                      title: Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
-                      trailing: Text('Bs. ${total.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                  ],
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cerrar'),
-          ),
-          if (carrito.isNotEmpty)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushNamed(context, '/pago', arguments: carrito);
-              },
-              child: Text('Ir al Pago'),
             ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cerrar'),
+              ),
+              if (carrito.isNotEmpty)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.pushNamed(context, '/pago', arguments: carrito);
+                  },
+                  child: Text('Ir al Pago'),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -189,9 +217,11 @@ class _DashboardClienteState extends State<DashboardCliente> {
                                   ? p['imagen_url']
                                   : 'https://source.unsplash.com/featured/?shoes,sneakers,footwear',
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
-                                return Center(child: CircularProgressIndicator());
+                                return Center(
+                                    child: CircularProgressIndicator());
                               },
                               errorBuilder: (context, error, stackTrace) {
                                 return Image.network(
@@ -215,7 +245,9 @@ class _DashboardClienteState extends State<DashboardCliente> {
                                 SizedBox(height: 4),
                                 Text(
                                   'Bs. ${double.tryParse(p['precio']?.toString() ?? '0.0')?.toStringAsFixed(2) ?? '0.00'}',
-                                  style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 SizedBox(height: 4),
                                 Row(
@@ -226,20 +258,23 @@ class _DashboardClienteState extends State<DashboardCliente> {
                                       onPressed: () {
                                         setState(() {
                                           if (cantidades[index]! > 1) {
-                                            cantidades[index] = cantidades[index]! - 1;
+                                            cantidades[index] =
+                                                cantidades[index]! - 1;
                                           }
                                         });
                                       },
                                     ),
                                     Text(
                                       cantidades[index]?.toString() ?? '1',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     IconButton(
                                       icon: Icon(Icons.add, size: 16),
                                       onPressed: () {
                                         setState(() {
-                                          cantidades[index] = (cantidades[index] ?? 1) + 1;
+                                          cantidades[index] =
+                                              (cantidades[index] ?? 1) + 1;
                                         });
                                       },
                                     ),
@@ -278,7 +313,8 @@ class _DashboardClienteState extends State<DashboardCliente> {
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-          BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Pagos'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_bag), label: 'Compras'),
         ],
       ),
     );

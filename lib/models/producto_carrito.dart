@@ -12,4 +12,11 @@ class ProductoCarrito {
     final precio = double.tryParse(producto['precio'].toString()) ?? 0.0;
     return precio * cantidad;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id_producto': producto['id'],
+      'cantidad': cantidad,
+    };
+  }
 }
