@@ -212,18 +212,12 @@ class _DashboardClienteState extends State<DashboardCliente> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: Image.network(
-                              p['imagen_url']?.isNotEmpty == true
-                                  ? p['imagen_url']
-                                  : 'https://source.unsplash.com/featured/?shoes,sneakers,footwear',
+                            child: FadeInImage.assetNetwork(
+                              placeholder:
+                                  'assets/loading_placeholder.gif', // usa un gif pequeño o imagen de carga local
+                              image: p['imagen_url'] ?? '',
                               fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                    child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
+                              imageErrorBuilder: (context, error, stackTrace) {
                                 return Image.network(
                                   'https://images.unsplash.com/photo-1517263904808-5dc0d6d3fa5c?auto=format&fit=crop&w=400&q=80',
                                   fit: BoxFit.cover,
