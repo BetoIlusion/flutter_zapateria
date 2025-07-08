@@ -16,31 +16,65 @@ class _AuthScreenState extends State<AuthScreen> {
   String userType = 'cliente';
 
   void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
-    final response = await ApiService.login(
-      email: email,
-      password: password,
-    );
+  try {
+    if (isLogin) {
+      final response = await ApiService.login(
+        email: email,
+        password: password,
+      );
 
-    switch (response['rol']) {
-      case 'cliente':
-        Navigator.pushReplacementNamed(context, '/dashboard_cliente');
-        break;
-      case 'distribuidor':
-        Navigator.pushReplacementNamed(context, '/dashboard_distribuidor');
-        break;
-      case 'admin':
-        Navigator.pushReplacementNamed(context, '/dashboard_admin');
-        break;
-      default:
+      if (response['success'] == false) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: Rol no reconocido')),
+          SnackBar(content: Text(response['message'] ?? 'Error en el login')),
         );
-        break;
+        return;
+      }
+
+      switch (response['rol']) {
+        case 'cliente':
+          Navigator.pushReplacementNamed(context, '/dashboard_cliente');
+          break;
+        case 'distribuidor':
+          Navigator.pushReplacementNamed(context, '/dashboard_distribuidor');
+          break;
+        case 'admin':
+          Navigator.pushReplacementNamed(context, '/dashboard_admin');
+          break;
+        default:
+          throw Exception('Rol no reconocido');
+      }
+    } else {
+      final response = await ApiService.register(
+        name: name,
+        email: email,
+        password: password,
+        rol: userType,
+      );
+
+      if (response['success'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Error en el registro'),
+          ),
+        );
+        return;
+      }
+
+      // Guardar el token si es necesario (por ejemplo, en SharedPreferences)
+      // await saveToken(response['token']);
+
+      Navigator.pushReplacementNamed(context, '/ubicacion_mapa',
+          arguments: response['rol']);
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${e.toString()}')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -108,9 +142,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           icon: Icons.lock,
                         ),
                         obscureText: true,
-                        validator: (value) => value!.length >= 6
-                            ? null
-                            : 'Mínimo 6 caracteres',
+                        validator: (value) =>
+                            value!.length >= 6 ? null : 'Mínimo 6 caracteres',
                         onSaved: (value) => password = value!,
                       ),
                       const SizedBox(height: 16),
@@ -157,7 +190,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.blue.shade600, Colors.blue.shade900],
+                              colors: [
+                                Colors.blue.shade600,
+                                Colors.blue.shade900
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -203,7 +239,8 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration({required String label, required IconData icon}) {
+  InputDecoration _buildInputDecoration(
+      {required String label, required IconData icon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.poppins(

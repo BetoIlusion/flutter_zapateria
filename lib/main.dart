@@ -4,6 +4,7 @@ import 'package:flutter_zapateria/screens/pago_screen.dart';
 import 'package:flutter_zapateria/models/producto_carrito.dart';
 import 'package:flutter_zapateria/screens/perfil_screen.dart';
 import 'package:flutter_zapateria/screens/pagos_screen.dart';
+import 'package:flutter_zapateria/screens/ruta_mapa_screen.dart'; // ✅ AJUSTA según tu estructura
 
 void main() {
   runApp(const MainApp());
@@ -19,21 +20,37 @@ class MainApp extends StatelessWidget {
       home: AuthScreen(),
       routes: {
         '/dashboard_cliente': (_) => DashboardCliente(),
-        '/dashboard_distribuidor': (_) => const DashboardDistribuidor(),
+        '/dashboard_distribuidor': (_) => DashboardDistribuidor(),
         '/dashboard_admin': (_) => const DashboardScreen(),
         '/perfil': (_) => PerfilScreen(),
         '/pagos': (_) => PagosScreen(),
-        
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pago') {
-          final List<ProductoCarrito> carrito = settings.arguments as List<ProductoCarrito>;
+          final carrito = settings.arguments as List<ProductoCarrito>;
           return MaterialPageRoute(
-            builder: (context) {
-              return PagoScreen(carrito: carrito);
-            },
+            builder: (context) => PagoScreen(carrito: carrito),
           );
         }
+        if (settings.name == '/ubicacion_mapa') {
+          final rol = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => UbicacionMapaScreen(rol: rol),
+          );
+        }
+
+        if (settings.name == '/seguir_ruta') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => RutaMapaScreen(
+              idCompra: args['id_compra'],
+              idDistribuidor: args['id_distribuidor'],
+            ),
+          );
+        }
+
+        // Ruta no implementada
+        assert(false, 'Ruta no implementada: ${settings.name}');
         return null;
       },
     );

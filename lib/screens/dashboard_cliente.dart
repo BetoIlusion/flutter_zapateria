@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_zapateria/export.dart';
-import 'package:flutter_zapateria/screens/pago_screen.dart';
 import 'package:flutter_zapateria/models/producto_carrito.dart';
 import 'package:flutter_zapateria/screens/perfil_screen.dart';
 import 'package:flutter_zapateria/screens/pagos_screen.dart';
