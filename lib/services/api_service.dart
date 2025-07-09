@@ -83,7 +83,18 @@ class ApiService {
         }),
       );
 
-      final data = json.decode(response.body);
+      // Añade este print para ver qué trae la respuesta
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      Map<String, dynamic> data = {};
+      try {
+        data = json.decode(response.body);
+      } catch (_) {
+        return {
+          'success': false,
+          'message': 'Respuesta no válida del servidor',
+        };
+      }
 
       if (response.statusCode == 201) {
         final prefs = await SharedPreferences.getInstance();
@@ -105,7 +116,59 @@ class ApiService {
       } else {
         return {
           'success': false,
-          'message': data['message'] ?? 'Error desconocido: ${response.statusCode}',
+          'message':
+              data['message'] ?? 'Error desconocido: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Excepción al conectar: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUser() async {
+    final url = Uri.parse('$_baseUrl/user');
+    final token = await getToken();
+
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'No autorizado: Token no encontrado',
+      };
+    }
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Código de estado (getUser): ${response.statusCode}');
+      print('Cuerpo de la respuesta (getUser): ${response.body}');
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': data,
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'No autorizado',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message'] ?? 'Error desconocido: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -286,27 +349,62 @@ class ApiService {
     }
   }
 
-  static Future<void> guardarUbicacion({
+  static Future<Map<String, dynamic>> guardarUbicacion({
     required double latitud,
     required double longitud,
   }) async {
-    final token = await getToken();
     final url = Uri.parse('$_baseUrl/ubicacion');
+    final token = await getToken();
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'latitud': latitud,
-        'longitud': longitud,
-      }),
-    );
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'No autorizado: Token no encontrado',
+      };
+    }
 
-    if (response.statusCode != 200) {
-      throw Exception('Error al guardar ubicación');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'latitud': latitud,
+          'longitud': longitud,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'],
+          'ubicacion': data['ubicacion'],
+        };
+      } else if (response.statusCode == 400) {
+        return {
+          'success': false,
+          'errors': data,
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'No autorizado',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Error desconocido: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Excepción al conectar: $e',
+      };
     }
   }
 
@@ -347,6 +445,128 @@ class ApiService {
       return json.decode(response.body);
     } else {
       throw Exception('Error al cambiar el estado del distribuidor');
+    }
+  }
+
+  // ---------- VEHICULO -------------
+  static Future<Map<String, dynamic>> getVehiculo() async {
+    final url = Uri.parse('$_baseUrl/vehiculo');
+    final token = await getToken();
+
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'No autorizado: Token no encontrado',
+      };
+    }
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Código de estado (getVehiculo): ${response.statusCode}');
+      print('Cuerpo de la respuesta (getVehiculo): ${response.body}');
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': data['data'],
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'No autorizado',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message'] ?? 'Error desconocido: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Excepción al conectar: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> guardarVehiculo({
+    required String marca,
+    required String modelo,
+    required String placa,
+    required double capacidadCarga,
+    required String anio,
+  }) async {
+    final url = Uri.parse('$_baseUrl/vehiculo');
+    final token = await getToken();
+
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'No autorizado: Token no encontrado',
+      };
+    }
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'marca': marca,
+          'modelo': modelo,
+          'placa': placa,
+          'capacidad_carga': capacidadCarga,
+          'anio': anio,
+        }),
+      );
+
+      print('Código de estado (guardarVehiculo): ${response.statusCode}');
+      print('Cuerpo de la respuesta (guardarVehiculo): ${response.body}');
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Vehículo guardado exitosamente',
+          'vehiculo': data['vehiculo'],
+        };
+      } else if (response.statusCode == 400) {
+        return {
+          'success': false,
+          'errors': data['errors'],
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'No autorizado',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message'] ?? 'Error desconocido: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Excepción al conectar: $e',
+      };
     }
   }
 }

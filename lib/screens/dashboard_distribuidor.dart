@@ -263,12 +263,11 @@ class _DashboardDistribuidorState extends State<DashboardDistribuidor> {
 
   @override
   Widget build(BuildContext context) {
+    // Actualiza la lista de pages
     final List<Widget> pages = [
       _buildAsignacionesView(),
-      const Center(child: Text('Vehículo (en desarrollo)')),
-      const Center(
-          child:
-              Text('Perfil (en desarrollo)')), // Reemplaza con tu PerfilScreen
+      const VehiculoScreen(), // Reemplaza el placeholder por VehiculoScreen
+      PerfilScreen(), // Asegúrate de que PerfilScreen esté importado
     ];
 
     return Scaffold(
@@ -308,23 +307,33 @@ class _DashboardDistribuidorState extends State<DashboardDistribuidor> {
               icon: const Icon(Icons.map_outlined),
             )
           : null,
+      // Modifica el BottomNavigationBar para manejar la navegación a VehiculoScreen
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        // Los colores se heredan del tema para consistencia
+        onTap: (index) {
+          if (index == 1) {
+            // Navega a VehiculoScreen cuando se selecciona "Vehículo"
+            Navigator.pushNamed(context, '/vehiculo');
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_turned_in_outlined),
-              activeIcon: Icon(Icons.assignment_turned_in),
-              label: 'Entregas'),
+            icon: Icon(Icons.assignment_turned_in_outlined),
+            activeIcon: Icon(Icons.assignment_turned_in),
+            label: 'Entregas',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.local_shipping_outlined),
-              activeIcon: Icon(Icons.local_shipping),
-              label: 'Vehículo'),
+            icon: Icon(Icons.local_shipping_outlined),
+            activeIcon: Icon(Icons.local_shipping),
+            label: 'Vehículo',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Perfil'),
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
         ],
       ),
     );

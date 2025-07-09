@@ -24,6 +24,7 @@ class MainApp extends StatelessWidget {
         '/dashboard_admin': (_) => const DashboardScreen(),
         '/perfil': (_) => PerfilScreen(),
         '/pagos': (_) => PagosScreen(),
+        '/vehiculo': (_) => VehiculoScreen(), // Nueva ruta
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pago') {
