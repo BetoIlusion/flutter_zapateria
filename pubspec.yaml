@@ -17,7 +17,7 @@ dependencies:
   flutter_map: ^7.0.2
   url_launcher: ^6.1.14
   google_fonts: ^6.2.1
-
+  qr_flutter: ^4.1.0
   
 
 dev_dependencies:
