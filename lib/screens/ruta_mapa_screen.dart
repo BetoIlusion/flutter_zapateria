@@ -2,17 +2,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart'; // Paquete moderno para coordenadas (LatLng)
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_zapateria/export.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RutaMapaScreen extends StatefulWidget {
   final int idCompra;
   final int idDistribuidor;
+  final int idAsignacion;
 
   const RutaMapaScreen({
     super.key,
     required this.idCompra,
     required this.idDistribuidor,
+    required this.idAsignacion,
   });
 
   @override
@@ -22,10 +25,9 @@ class RutaMapaScreen extends StatefulWidget {
 class _RutaMapaScreenState extends State<RutaMapaScreen> {
   bool _cargando = true;
   String? _error;
-
-  LatLng? _puntoInicio; // Ubicación del distribuidor
-  LatLng? _puntoFin; // Ubicación del cliente
-  List<LatLng> _puntosRuta = []; // Lista de coordenadas para dibujar la línea
+  LatLng? _puntoInicio;
+  LatLng? _puntoFin;
+  List<LatLng> _puntosRuta = [];
 
   @override
   void initState() {
@@ -35,26 +37,30 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
 
   Future<void> _cargarDatosRuta() async {
     try {
-      // 1. Obtener ubicaciones desde tu backend
       final ubicaciones = await ApiService.getUbicacionesRuta(
         idCompra: widget.idCompra,
         idDistribuidor: widget.idDistribuidor,
       );
 
-      // Extraer y parsear las coordenadas (vienen como String)
       final distribuidor = ubicaciones['distribuidor'];
       final cliente = ubicaciones['cliente'];
 
+      if (distribuidor['latitud'] == null || distribuidor['longitud'] == null) {
+        throw Exception('Ubicación del distribuidor no disponible');
+      }
+      if (cliente['latitud'] == null || cliente['longitud'] == null) {
+        throw Exception('Ubicación del cliente no disponible');
+      }
+
       _puntoInicio = LatLng(
-        double.parse(distribuidor['latitud']),
-        double.parse(distribuidor['longitud']),
+        double.parse(distribuidor['latitud'].toString()),
+        double.parse(distribuidor['longitud'].toString()),
       );
       _puntoFin = LatLng(
-        double.parse(cliente['latitud']),
-        double.parse(cliente['longitud']),
+        double.parse(cliente['latitud'].toString()),
+        double.parse(cliente['longitud'].toString()),
       );
 
-      // 2. Obtener la geometría de la ruta desde OSRM (API gratuita)
       final ruta = await _obtenerGeometriaRutaOSRM(_puntoInicio!, _puntoFin!);
       setState(() {
         _puntosRuta = ruta;
@@ -68,9 +74,7 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
     }
   }
 
-  /// Llama a la API de OSRM para obtener la ruta entre dos puntos.
-  Future<List<LatLng>> _obtenerGeometriaRutaOSRM(
-      LatLng inicio, LatLng fin) async {
+  Future<List<LatLng>> _obtenerGeometriaRutaOSRM(LatLng inicio, LatLng fin) async {
     final url = 'https://router.project-osrm.org/route/v1/driving/'
         '${inicio.longitude},${inicio.latitude};${fin.longitude},${fin.latitude}'
         '?overview=full&geometries=geojson';
@@ -86,6 +90,66 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
     }
   }
 
+  Future<void> _cambiarEstado(String estado) async {
+    try {
+      final response = await ApiService.cambiarEstadoAsignacion(
+        idAsignacion: widget.idAsignacion,
+        estado: estado,
+      );
+
+      if (response['success']) {
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              'Éxito',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade700,
+              ),
+            ),
+            content: Text(
+              'Asignación #${response['data']['id']} marcada como "$estado".',
+              style: GoogleFonts.poppins(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cierra el diálogo
+                  Navigator.pushReplacementNamed(context, '/dashboard_distribuidor');
+                },
+                child: Text(
+                  'Aceptar',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Error al actualizar el estado'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,23 +162,17 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
               ? Center(child: Text(_error!, textAlign: TextAlign.center))
               : Column(
                   children: [
-                    // --- MAPA ---
                     Expanded(
                       child: FlutterMap(
                         options: MapOptions(
-                          initialCenter: _puntoInicio ??
-                              LatLng(-17.78, -63.18), // Centro inicial
+                          initialCenter: _puntoInicio ?? LatLng(-17.78, -63.18),
                           initialZoom: 15.0,
                         ),
                         children: [
-                          // Capa de mapa base de OpenStreetMap
                           TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName:
-                                'com.tu.app', // Cambia por tu package name
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.flutter.zapateria',
                           ),
-                          // Capa para dibujar la ruta
                           PolylineLayer(
                             polylines: [
                               Polyline(
@@ -124,10 +182,8 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
                               ),
                             ],
                           ),
-                          // Capa para los marcadores
                           MarkerLayer(
                             markers: [
-                              // Marcador del Distribuidor (Inicio)
                               if (_puntoInicio != null)
                                 Marker(
                                   point: _puntoInicio!,
@@ -135,16 +191,13 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
                                   height: 80,
                                   child: const Column(
                                     children: [
-                                      Icon(Icons.store,
-                                          color: Colors.green, size: 40),
+                                      Icon(Icons.store, color: Colors.green, size: 40),
                                       Text('Inicio',
                                           style: TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.bold))
+                                              color: Colors.black, fontWeight: FontWeight.bold))
                                     ],
                                   ),
                                 ),
-                              // Marcador del Cliente (Fin)
                               if (_puntoFin != null)
                                 Marker(
                                   point: _puntoFin!,
@@ -152,12 +205,10 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
                                   height: 80,
                                   child: const Column(
                                     children: [
-                                      Icon(Icons.person_pin_circle,
-                                          color: Colors.red, size: 40),
+                                      Icon(Icons.person_pin_circle, color: Colors.red, size: 40),
                                       Text('Cliente',
                                           style: TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.bold))
+                                              color: Colors.black, fontWeight: FontWeight.bold))
                                     ],
                                   ),
                                 ),
@@ -166,36 +217,46 @@ class _RutaMapaScreenState extends State<RutaMapaScreen> {
                         ],
                       ),
                     ),
-                    // --- BOTONES DE ACCIÓN ---
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12.0, horizontal: 8.0),
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           ElevatedButton(
-                            onPressed: () {
-                              /* TODO: Lógica para marcar como entregado */
-                            },
+                            onPressed: () => _cambiarEstado('entregado'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green),
-                            child: const Text('Entregado'),
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(
+                              'Entregado',
+                              style: GoogleFonts.poppins(fontSize: 14, color: Colors.white),
+                            ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              /* TODO: Lógica para no entregado */
-                            },
+                            onPressed: () => _cambiarEstado('no entregado'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange),
-                            child: const Text('No Entregado'),
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(
+                              'No Entregado',
+                              style: GoogleFonts.poppins(fontSize: 14, color: Colors.white),
+                            ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              /* TODO: Lógica para producto incorrecto */
-                            },
+                            onPressed: () => _cambiarEstado('producto incorrecto'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            child: const Text('P. Incorrecto'),
+                              backgroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(
+                              'P. Incorrecto',
+                              style: GoogleFonts.poppins(fontSize: 14, color: Colors.white),
+                            ),
                           ),
                         ],
                       ),

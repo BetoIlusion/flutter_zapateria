@@ -24,27 +24,16 @@ class _UbicacionMapaScreenState extends State<UbicacionMapaScreen> {
     }
 
     try {
-      final response = await ApiService.guardarUbicacion(
+      await ApiService.guardarUbicacion(
         latitud: _ubicacionSeleccionada!.latitude,
         longitud: _ubicacionSeleccionada!.longitude,
       );
 
-      if (!response['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'] ?? 'Error al guardar ubicación')),
-        );
-        return;
-      }
-
       // Redirige según rol
       if (widget.rol == 'cliente') {
         Navigator.pushReplacementNamed(context, '/dashboard_cliente');
-      } else if (widget.rol == 'distribuidor') {
-        Navigator.pushReplacementNamed(context, '/vehiculo');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rol no reconocido')),
-        );
+        Navigator.pushReplacementNamed(context, '/dashboard_distribuidor');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +48,8 @@ class _UbicacionMapaScreenState extends State<UbicacionMapaScreen> {
       appBar: AppBar(title: const Text('Selecciona tu ubicación')),
       body: FlutterMap(
         options: MapOptions(
-          initialCenter: LatLng(-17.783327, -63.182140), // Plaza 24 de Septiembre
+          initialCenter:
+              LatLng(-17.783327, -63.182140), // Plaza 24 de Septiembre
           initialZoom: 14,
           onTap: (tapPosition, point) {
             setState(() {
@@ -73,16 +63,15 @@ class _UbicacionMapaScreenState extends State<UbicacionMapaScreen> {
             userAgentPackageName: 'com.flutter.zapateria',
           ),
           if (_ubicacionSeleccionada != null)
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _ubicacionSeleccionada!,
-                  width: 40,
-                  height: 40,
-                  child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
-                ),
-              ],
-            ),
+            MarkerLayer(markers: [
+              Marker(
+                point: _ubicacionSeleccionada!,
+                width: 40,
+                height: 40,
+                child:
+                    const Icon(Icons.location_pin, color: Colors.red, size: 40),
+              )
+            ])
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

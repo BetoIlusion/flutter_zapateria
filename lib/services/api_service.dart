@@ -292,24 +292,107 @@ class ApiService {
 
   // ------------------ ASIGNACIONES ------------------
   static Future<List<dynamic>> getAsignaciones() async {
-    final token = await getToken();
     final url = Uri.parse('$_baseUrl/asignacion');
+    final token = await getToken();
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
+    if (token == null) {
+      throw Exception('No autorizado: Token no encontrado');
+    }
 
-    if (response.statusCode == 200) {
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Código de estado (getAsignaciones): ${response.statusCode}');
+      print('Cuerpo de la respuesta (getAsignaciones): ${response.body}');
+
       final data = json.decode(response.body);
-      return data['data'];
-    } else if (response.statusCode == 404) {
-      return [];
-    } else {
-      throw Exception('Error al obtener asignaciones');
+
+      if (response.statusCode == 200 && data['status'] == 'success') {
+        return data['data'];
+      } else if (response.statusCode == 403) {
+        throw Exception(data['message'] ?? 'No autorizado');
+      } else if (response.statusCode == 404) {
+        throw Exception(data['message'] ?? 'Distribuidor no encontrado');
+      } else {
+        throw Exception(
+            data['message'] ?? 'Error desconocido: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Excepción al conectar: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> cambiarEstadoAsignacion({
+    required int idAsignacion,
+    required String estado,
+  }) async {
+    final url = Uri.parse('$_baseUrl/asignacion/$idAsignacion/estado/$estado');
+    final token = await getToken();
+
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'No autorizado: Token no encontrado',
+      };
+    }
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(
+          'Código de estado (cambiarEstadoAsignacion): ${response.statusCode}');
+      print(
+          'Cuerpo de la respuesta (cambiarEstadoAsignacion): ${response.body}');
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200 && data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Estado actualizado exitosamente',
+          'data': data['data'],
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'No autorizado',
+        };
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Asignación no encontrada',
+        };
+      } else if (response.statusCode == 422) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Estado inválido',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message'] ?? 'Error desconocido: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Excepción al conectar: $e',
+      };
     }
   }
 

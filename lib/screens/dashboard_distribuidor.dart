@@ -51,21 +51,27 @@ class _DashboardDistribuidorState extends State<DashboardDistribuidor> {
 
     try {
       final data = await ApiService.getAsignaciones();
+      print('Asignaciones recibidas: $data'); // Depuración
       if (!mounted) return;
       setState(() {
         _asignaciones = data;
+        if (_asignaciones.isEmpty) {
+          _error = 'No tienes asignaciones';
+        }
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudieron cargar las asignaciones.';
+        _error = 'No se pudieron cargar las asignaciones: $e';
         _asignaciones = [];
       });
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-              content: Text('Error: $e'), backgroundColor: Colors.red.shade700),
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
         );
     } finally {
       if (mounted) {
@@ -191,12 +197,22 @@ class _DashboardDistribuidorState extends State<DashboardDistribuidor> {
 
   // En dashboard_distribuidor.dart (esta función ya la tienes y es correcta)
   void _navigateToRuta(Map<String, dynamic> a) {
+    if (a['id'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ID de asignación no disponible'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
     Navigator.pushNamed(
       context,
       '/seguir_ruta',
       arguments: {
         'id_compra': a['id_compra'],
         'id_distribuidor': a['id_distribuidor'],
+        'id_asignacion': a['id'], // Cambiado de 'id_asignacion' a 'id'
       },
     );
   }

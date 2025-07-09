@@ -46,6 +46,8 @@ class MainApp extends StatelessWidget {
             builder: (context) => RutaMapaScreen(
               idCompra: args['id_compra'],
               idDistribuidor: args['id_distribuidor'],
+              idAsignacion: args['id_asignacion'] ??
+                  0, // Fallback a 0 si no está presente
             ),
           );
         }
