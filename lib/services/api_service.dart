@@ -491,19 +491,35 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> getRutaOptimaDistribuidor() async {
-    final uri = Uri.parse('$_baseUrl/distribuidor-ruta-optima');
-    final token = await getToken(); // tu token sanctum
-    final resp = await http.get(uri, headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    });
-    final body = jsonDecode(resp.body);
-    if (resp.statusCode == 200 && body['status'] == 'success') {
-      return body['data'];
+  static Future<Map<String, dynamic>>
+      getRutaOptimaDistribuidorDetallada() async {
+    final url = Uri.parse('$_baseUrl/distribuidor-ruta-optima');
+    final token = await getToken();
+
+    if (token == null) {
+      throw Exception('Token de autenticación no encontrado');
     }
-    throw Exception('Error al obtener ruta óptima: ${body['message']}');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200 && data['status'] == 'success') {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Error al obtener ruta detallada');
+      }
+    } catch (e) {
+      throw Exception('Error al conectar con el servidor: $e');
+    }
   }
 
   // ------------------ DISTRIBUIDOR ESTADO ------------------
