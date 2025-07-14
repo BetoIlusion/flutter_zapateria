@@ -314,10 +314,7 @@ class _DashboardDistribuidorState extends State<DashboardDistribuidor> {
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () {
-                // TODO: Implementar una acción útil, como mostrar un mapa general
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Acción de rutas generales')),
-                );
+                Navigator.pushNamed(context, '/rutas_distribuidor');
               },
               label: const Text('Rutas'),
               icon: const Icon(Icons.map_outlined),

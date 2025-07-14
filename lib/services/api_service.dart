@@ -491,6 +491,21 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getRutaOptimaDistribuidor() async {
+    final uri = Uri.parse('$_baseUrl/distribuidor-ruta-optima');
+    final token = await getToken(); // tu token sanctum
+    final resp = await http.get(uri, headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+    final body = jsonDecode(resp.body);
+    if (resp.statusCode == 200 && body['status'] == 'success') {
+      return body['data'];
+    }
+    throw Exception('Error al obtener ruta óptima: ${body['message']}');
+  }
+
   // ------------------ DISTRIBUIDOR ESTADO ------------------
 
   static Future<Map<String, dynamic>> getDistribuidorEstado() async {
