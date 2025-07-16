@@ -52,11 +52,9 @@ class _DashboardClienteState extends State<DashboardCliente> {
       } else {
         carrito.add(ProductoCarrito(
           producto: {
-            'id':
-                producto['id'] ?? 'unknown', // Valor por defecto si id es nulo
+            'id': producto['id'] ?? 'unknown',
             'nombre': producto['nombre'] ?? 'Sin nombre',
-            'precio': producto['precio']
-                .toString(), // Aseguramos que sea string para conversión posterior
+            'precio': producto['precio'].toString(),
             'imagen_url': producto['imagen_url'] ?? '',
           },
           cantidad: cantidadSeleccionada,
@@ -124,7 +122,6 @@ class _DashboardClienteState extends State<DashboardCliente> {
                                       final nombre =
                                           carrito[index].producto['nombre'];
                                       carrito.removeAt(index);
-                                      // Actualiza solo el diálogo
                                       setStateDialog(() {});
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
@@ -171,6 +168,11 @@ class _DashboardClienteState extends State<DashboardCliente> {
     );
   }
 
+  String obtenerNombreImagen(String url) {
+    final parts = url.split('/');
+    return parts.isNotEmpty ? parts.last : 'default.jpg';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,6 +206,8 @@ class _DashboardClienteState extends State<DashboardCliente> {
                   ),
                   itemBuilder: (context, index) {
                     final p = productos[index];
+                    final nombreImagen =
+                        obtenerNombreImagen(p['imagen_url'] ?? '');
                     return Card(
                       elevation: 2,
                       clipBehavior: Clip.antiAlias,
@@ -211,14 +215,12 @@ class _DashboardClienteState extends State<DashboardCliente> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: FadeInImage.assetNetwork(
-                              placeholder:
-                                  'assets/loading_placeholder.gif', // usa un gif pequeño o imagen de carga local
-                              image: p['imagen_url'] ?? '',
+                            child: Image.asset(
+                              'assets/imagenes_productos/$nombreImagen',
                               fit: BoxFit.cover,
-                              imageErrorBuilder: (context, error, stackTrace) {
-                                return Image.network(
-                                  'https://images.unsplash.com/photo-1517263904808-5dc0d6d3fa5c?auto=format&fit=crop&w=400&q=80',
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/imagenes_productos/default.jpg',
                                   fit: BoxFit.cover,
                                 );
                               },
@@ -234,6 +236,13 @@ class _DashboardClienteState extends State<DashboardCliente> {
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Talla 34-42',
+                                  style: TextStyle(
+                                      color: const Color.fromARGB(255, 16, 57, 145),
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 SizedBox(height: 4),
                                 Text(

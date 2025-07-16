@@ -1,5 +1,5 @@
 // lib/models.dart
-import 'package:flutter/foundation.dart';
+//import 'package:flutter/foundation.dart';
 
 class Producto {
   final int id;
